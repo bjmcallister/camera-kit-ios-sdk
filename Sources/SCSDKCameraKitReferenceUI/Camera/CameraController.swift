@@ -437,7 +437,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
             orientation: cameraKit.activeInput.frameOrientation,
             size: OutputSizeHelper.normalizedSize(
                 for: cameraKit.activeInput.frameSize,
-                aspectRatio: UIScreen.main.bounds.width / UIScreen.main.bounds.height,
+                aspectRatio: 9 / 16,
                 orientation: cameraKit.activeInput.frameOrientation
             )
         )
