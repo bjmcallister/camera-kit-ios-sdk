@@ -55,8 +55,9 @@ public class Recorder {
                 AVVideoScalingModeKey: AVVideoScalingModeResizeAspectFill,
             ]
         )
+    
 
-        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror)
+        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror, size: size)
 
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
@@ -85,7 +86,7 @@ public class Recorder {
         }
     }
 
-    public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool)
+    public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize)
         -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
@@ -102,6 +103,7 @@ public class Recorder {
 
         if mirrored {
             transform = transform.scaledBy(x: -1, y: 1)
+            transform = transform.translatedBy(x: -size.width, y: 0)
         }
 
         return transform
