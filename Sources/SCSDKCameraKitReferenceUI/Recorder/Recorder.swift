@@ -15,7 +15,7 @@ public class Recorder {
     /// - Attention: If your camera pipeline uses AVFoundation, you do not need to set this property.
     /// - Note: By default this is FALSE. When set to FALSE, the capture will be mirrored on the front and not mirrored on the back camera.
     /// - Note: If set to TRUE, the capture will be mirrored on top of any mirroring done by AVFoundation: Capture is mirrored if either horizontallyMirrored is TRUE or device set to front camera is TRUE. If both are TRUE the two mirroring operations will cancel out.
-    public var horizontallyMirror: Bool = false
+    public var horizontallyMirror: Bool = true
 
     private let writer: AVAssetWriter
     private let videoInput: AVAssetWriterInput
