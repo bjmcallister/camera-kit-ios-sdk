@@ -57,7 +57,7 @@ public class Recorder {
         )
     
 
-        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror, size: size)
+        videoInput.transform = Recorder.portraitMirrorTransform(size: size)
 
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
@@ -107,6 +107,11 @@ public class Recorder {
         }
 
         return transform
+    }
+    
+    public static func portraitMirrorTransform(size: CGSize) -> CGAffineTransform {
+        return CGAffineTransform(translationX: size.width, y: 0)
+               .scaledBy(x: -1, y: 1)
     }
 }
 
