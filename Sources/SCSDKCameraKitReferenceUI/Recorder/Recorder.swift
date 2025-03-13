@@ -1,5 +1,4 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
 
 import AVFoundation
 import SCSDKCameraKit
@@ -7,22 +6,25 @@ import UIKit
 
 /// Sample video recorder implementation.
 public class Recorder {
-
     /// The URL to write the video to.
     private let outputURL: URL
 
-    /// The AVWriterOutput for CameraKit.
+    /// The AVWriterOutput for CameraKt.
     public let output: AVWriterOutput
+    /// Flip captured video horizontally.
+    /// - Attention: If your camera pipeline uses AVFoundation, you do not need to set this property.
+    /// - Note: By default this is FALSE. When set to FALSE, the capture will be mirrored on the front and not mirrored on the back camera.
+    /// - Note: If set to TRUE, the capture will be mirrored on top of any mirroring done by AVFoundation: Capture is mirrored if either horizontallyMirrored is TRUE or device set to front camera is TRUE. If both are TRUE the two mirroring operations will cancel out.
+    public var horizontallyMirror: Bool = true
 
-    fileprivate let writer: AVAssetWriter
-    fileprivate let videoInput: AVAssetWriterInput
-    fileprivate let pixelBufferInput: AVAssetWriterInputPixelBufferAdaptor
-
+    private let writer: AVAssetWriter
+    private let videoInput: AVAssetWriterInput
+    private let pixelBufferInput: AVAssetWriterInputPixelBufferAdaptor
     private let audioInput: AVAssetWriterInput = {
         let compressionAudioSettings: [String: Any] =
             [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVEncoderBitRateKey: 128000,
+                AVEncoderBitRateKey: 128_000,
                 AVSampleRateKey: 44100,
                 AVNumberOfChannelsKey: 1,
             ]
@@ -32,21 +34,19 @@ public class Recorder {
         return audioInput
     }()
 
-    /// Designated initializer.
+    /// Designated init to pass in required deps
     /// - Parameters:
-    ///   - url: output URL of video file.
-    ///   - orientation: current orientation of device.
-    ///   - size: video output size.
-    ///   - captureConnection: (Optional) The AVCaptureConnection from your camera output.
-    ///                        Pass this in to log its default mirroring behavior and adjust your transform.
-    /// - Throws: Throws an error if the asset writer cannot be created.
-    public init(url: URL,
-                orientation: AVCaptureVideoOrientation,
-                size: CGSize,
-                captureConnection: AVCaptureConnection? = nil) throws {
-        outputURL = url
-        writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-        videoInput = AVAssetWriterInput(
+    ///   - url: output URL of video file
+    ///   - orientation: current orientation of device
+    ///   - size: height of video output
+    ///   - mirrored:flip video capture horizontally.  If false, Recorder will automatically mirror capture
+    ///   based on AVFoundation camera configuration. If true, Recorder will flip the capture. Set this parameter
+    ///   to true when manually mirroring the input with LensProcessor.setInputHorizontallyMirrored.
+    /// - Throws: Throws error if cannot create asset writer with output file URL and file type
+    public init(url: URL, orientation: AVCaptureVideoOrientation, size: CGSize) throws {
+        self.outputURL = url
+        self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        self.videoInput = AVAssetWriterInput(
             mediaType: .video,
             outputSettings: [
                 AVVideoCodecKey: AVVideoCodecType.h264,
@@ -55,29 +55,21 @@ public class Recorder {
                 AVVideoScalingModeKey: AVVideoScalingModeResizeAspectFill,
             ]
         )
-        videoInput.expectsMediaDataInRealTime = true
+    
 
-        // Check the capture connection for default mirroring.
-        if let connection = captureConnection {
-            print("Is video mirroring enabled by default: \(connection.isVideoMirrored)")
-            // Use the connection's mirroring value to set the transform.
-            videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: connection.isVideoMirrored, size: size)
-        } else {
-            // Default to no manual mirroring.
-            videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: false, size: size)
-        }
+        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror, size: size)
 
-        pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
+        self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
             sourcePixelBufferAttributes: [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
             ]
         )
 
         writer.add(videoInput)
         writer.add(audioInput)
 
-        output = AVWriterOutput(avAssetWriter: writer, pixelBufferInput: pixelBufferInput, audioInput: audioInput)
+        self.output = AVWriterOutput(avAssetWriter: writer, pixelBufferInput: pixelBufferInput, audioInput: audioInput)
     }
 
     public func startRecording() {
@@ -94,8 +86,9 @@ public class Recorder {
         }
     }
 
-    /// Adjusts the video transform based on the device orientation, mirror setting, and video size.
-    static private func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize) -> CGAffineTransform {
+    public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize)
+        -> CGAffineTransform
+    {
         var transform: CGAffineTransform = .identity
         switch orientation {
         case .portraitUpsideDown:
@@ -109,9 +102,7 @@ public class Recorder {
         }
 
         if mirrored {
-            // For portrait, translate by the video's width before applying the horizontal flip.
-            transform = transform.translatedBy(x: size.width, y: 0)
-            transform = transform.scaledBy(x: -1, y: 1)
+            transform = transform.scaledBy(x: 0, y: 1)
         }
 
         return transform
@@ -120,6 +111,6 @@ public class Recorder {
 
 private extension AVCaptureVideoOrientation {
     var isPortrait: Bool {
-        return self == .portrait || self == .portraitUpsideDown
+        self == .portrait || self == .portraitUpsideDown
     }
 }
