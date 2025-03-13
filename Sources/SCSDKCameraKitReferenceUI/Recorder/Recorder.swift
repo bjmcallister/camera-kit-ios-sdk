@@ -62,7 +62,7 @@ public class Recorder {
         
         var transform: CGAffineTransform = CGAffineTransform(scaleX: -1.0, y: 1.0)
         transform = transform.rotated(by: CGFloat(Double.pi/2))
-        self.videoInput.transform = transform
+        videoInput.transform = transform
         
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
