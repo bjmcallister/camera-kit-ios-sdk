@@ -72,7 +72,7 @@ open class CameraViewController: UIViewController, CameraControllerUIDelegate {
         if let previewLayer = cameraView.previewView.layer as? AVCaptureVideoPreviewLayer,
            let connection = previewLayer.connection,
            connection.isVideoMirroringSupported {
-            connection.isVideoMirrored = true // or use your horizontallyMirror flag
+            connection.isVideoMirrored = false // or use your horizontallyMirror flag
         }
     }
 
