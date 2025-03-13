@@ -57,7 +57,7 @@ public class Recorder {
         )
         
         
-        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror, size: size)
+        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror)
         
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
@@ -86,13 +86,11 @@ public class Recorder {
         }
     }
     
-    public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize)
+    public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool)
         -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
-        print("Initial transform: \(transform)")
 
-        // Apply rotation based on orientation
         switch orientation {
         case .portraitUpsideDown:
             transform = transform.rotated(by: .pi)
@@ -103,20 +101,6 @@ public class Recorder {
         default:
             break
         }
-        print("After rotation: \(transform)")
-
-        if mirrored {
-            print("Before mirroring: \(transform)")
-            transform = transform.translatedBy(x: size.width, y: 0)
-            print("After translation for mirroring: \(transform)")
-            transform = transform.scaledBy(x: -1, y: 1)
-            print("After scaling for mirroring: \(transform)")
-        }
-
-        print("Final transform matrix:")
-        print("a: \(transform.a), b: \(transform.b)")
-        print("c: \(transform.c), d: \(transform.d)")
-        print("tx: \(transform.tx), ty: \(transform.ty)")
 
         return transform
     }
