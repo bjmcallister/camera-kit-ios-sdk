@@ -90,23 +90,34 @@ public class Recorder {
         -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
-        if mirrored {
-            transform = transform.translatedBy(x: size.width, y: 0)
-            transform = transform.scaledBy(x: -1, y: 1)
-        }
-
         switch orientation {
+        case .portrait:
+            if mirrored {
+                transform = transform.translatedBy(x: size.width, y: 0)
+                transform = transform.scaledBy(x: -1, y: 1)
+            }
         case .portraitUpsideDown:
             transform = transform.rotated(by: .pi)
+            if mirrored {
+                transform = transform.translatedBy(x: -size.width, y: 0)
+                transform = transform.scaledBy(x: -1, y: 1)
+            }
         case .landscapeRight:
             transform = transform.rotated(by: .pi / 2)
+            if mirrored {
+                transform = transform.translatedBy(x: size.height, y: 0)
+                transform = transform.scaledBy(x: -1, y: 1)
+            }
         case .landscapeLeft:
             transform = transform.rotated(by: -.pi / 2)
+            if mirrored {
+                transform = transform.translatedBy(x: -size.height, y: 0)
+                transform = transform.scaledBy(x: -1, y: 1)
+            }
         default:
             break
         }
         return transform
-
     }
 }
 
