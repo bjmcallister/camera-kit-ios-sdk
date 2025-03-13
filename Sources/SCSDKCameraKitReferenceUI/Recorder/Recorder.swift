@@ -102,7 +102,8 @@ public class Recorder {
         }
 
         if mirrored {
-            transform = transform.scaledBy(x: -1, y: 0)
+            transform = transform.translatedBy(x: size.width, y: 0)
+//            transform = transform.scaledBy(x: -1, y: 1)
         }
 
         return transform
