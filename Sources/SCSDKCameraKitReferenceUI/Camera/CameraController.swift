@@ -212,7 +212,10 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         // Create a CameraKit input. AVSessionInput is an input that CameraKit provides that wraps up lens-specific
         // details of AVCaptureSession configuration (such as setting the pixel format).
         // You are still responsible for normal configuration of the session (adding the AVCaptureDevice, etc).
-        let input = AVSessionInput(session: captureSession)
+        let input = MirrorAVSessionInput(session: captureSession)
+        // Create a CameraKit ARKit input. AVSessionInput is an input that CameraKit provides that wraps up lens-specific
+        // details of ARSession configuration.
+        let arInput = ARSessionInput()
 
         // Create a CameraKit ARKit input. AVSessionInput is an input that CameraKit provides that wraps up lens-specific
         // details of ARSession configuration.
