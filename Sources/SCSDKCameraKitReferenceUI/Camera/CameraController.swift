@@ -217,10 +217,6 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         // details of ARSession configuration.
         let arInput = ARSessionInput()
 
-        // Create a CameraKit ARKit input. AVSessionInput is an input that CameraKit provides that wraps up lens-specific
-        // details of ARSession configuration.
-        let arInput = ARSessionInput()
-
         // If your lenses need TrueDepth-based face tracking (for ARKit face lenses or true size lenses),
         // use this initializer instead. Please note your app will be subject to additional app review,
         // concerning your usage of the TrueDepth camera.
