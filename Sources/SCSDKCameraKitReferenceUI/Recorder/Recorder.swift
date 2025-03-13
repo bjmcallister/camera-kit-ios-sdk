@@ -90,6 +90,11 @@ public class Recorder {
         -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
+        if mirrored {
+            transform = transform.translatedBy(x: size.width, y: 0)
+            transform = transform.scaledBy(x: -1, y: 1)
+        }
+
         switch orientation {
         case .portraitUpsideDown:
             transform = transform.rotated(by: .pi)
@@ -100,13 +105,8 @@ public class Recorder {
         default:
             break
         }
-
-        if mirrored {
-            transform = transform.translatedBy(x: -size.width/2, y: size.width/2)
-            transform = transform.scaledBy(x: -1, y: 1)
-        }
-
         return transform
+
     }
 }
 
