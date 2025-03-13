@@ -65,15 +65,7 @@ open class CameraViewController: UIViewController, CameraControllerUIDelegate {
 
     override open func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // Existing brightness adjustments
-//        cameraController.increaseBrightnessIfNecessary()
-        
-        // Set the mirroring on the preview layer if supported.
-        if let previewLayer = cameraView.previewView.layer as? AVCaptureVideoPreviewLayer,
-           let connection = previewLayer.connection,
-           connection.isVideoMirroringSupported {
-            connection.isVideoMirrored = false // or use your horizontallyMirror flag
-        }
+        cameraController.increaseBrightnessIfNecessary()
     }
 
     override open func viewDidDisappear(_ animated: Bool) {
