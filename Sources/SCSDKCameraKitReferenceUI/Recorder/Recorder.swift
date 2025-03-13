@@ -57,12 +57,7 @@ public class Recorder {
         )
         
         
-//        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror)
-//        videoInput.transform = CGAffineTransform(scaleX: -1, y: 1)
-        
-        var transform: CGAffineTransform = CGAffineTransform(scaleX: -1.0, y: 1.0)
-        transform = transform.rotated(by: CGFloat(Double.pi/2))
-        videoInput.transform = transform
+        videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror)
         
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
