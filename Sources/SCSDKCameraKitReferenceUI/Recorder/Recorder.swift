@@ -8,7 +8,7 @@ import UIKit
 public class Recorder {
     /// The URL to write the video to.
     private let outputURL: URL
-
+    
     /// The AVWriterOutput for CameraKt.
     public let output: AVWriterOutput
     /// Flip captured video horizontally.
@@ -16,24 +16,24 @@ public class Recorder {
     /// - Note: By default this is FALSE. When set to FALSE, the capture will be mirrored on the front and not mirrored on the back camera.
     /// - Note: If set to TRUE, the capture will be mirrored on top of any mirroring done by AVFoundation: Capture is mirrored if either horizontallyMirrored is TRUE or device set to front camera is TRUE. If both are TRUE the two mirroring operations will cancel out.
     public var horizontallyMirror: Bool = true
-
+    
     private let writer: AVAssetWriter
     private let videoInput: AVAssetWriterInput
     private let pixelBufferInput: AVAssetWriterInputPixelBufferAdaptor
     private let audioInput: AVAssetWriterInput = {
         let compressionAudioSettings: [String: Any] =
-            [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVEncoderBitRateKey: 128_000,
-                AVSampleRateKey: 44100,
-                AVNumberOfChannelsKey: 1,
-            ]
-
+        [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVEncoderBitRateKey: 128_000,
+            AVSampleRateKey: 44100,
+            AVNumberOfChannelsKey: 1,
+        ]
+        
         let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: compressionAudioSettings)
         audioInput.expectsMediaDataInRealTime = true
         return audioInput
     }()
-
+    
     /// Designated init to pass in required deps
     /// - Parameters:
     ///   - url: output URL of video file
@@ -55,28 +55,28 @@ public class Recorder {
                 AVVideoScalingModeKey: AVVideoScalingModeResizeAspectFill,
             ]
         )
-    
-
+        
+        
         videoInput.transform = Recorder.affineTransform(orientation: orientation, mirrored: self.horizontallyMirror, size: size)
-
+        
         self.pixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: videoInput,
             sourcePixelBufferAttributes: [
                 kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
             ]
         )
-
+        
         writer.add(videoInput)
         writer.add(audioInput)
-
+        
         self.output = AVWriterOutput(avAssetWriter: writer, pixelBufferInput: pixelBufferInput, audioInput: audioInput)
     }
-
+    
     public func startRecording() {
         writer.startWriting()
         output.startRecording()
     }
-
+    
     public func finishRecording(completion: ((URL?, Error?) -> Void)?) {
         output.stopRecording()
         videoInput.markAsFinished()
@@ -85,38 +85,37 @@ public class Recorder {
             completion?(self?.outputURL, nil)
         }
     }
-
+    
     public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize)
-        -> CGAffineTransform
+    -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
+        
+        // Apply rotation based on orientation
         switch orientation {
-        case .portrait:
-            if mirrored {
-                transform = transform.translatedBy(x: size.width, y: 0)
-                transform = transform.scaledBy(x: -1, y: 1)
-            }
         case .portraitUpsideDown:
             transform = transform.rotated(by: .pi)
-            if mirrored {
-                transform = transform.translatedBy(x: -size.width, y: 0)
-                transform = transform.scaledBy(x: -1, y: 1)
-            }
         case .landscapeRight:
             transform = transform.rotated(by: .pi / 2)
-            if mirrored {
-                transform = transform.translatedBy(x: size.height, y: 0)
-                transform = transform.scaledBy(x: -1, y: 1)
-            }
         case .landscapeLeft:
             transform = transform.rotated(by: -.pi / 2)
-            if mirrored {
-                transform = transform.translatedBy(x: -size.height, y: 0)
-                transform = transform.scaledBy(x: -1, y: 1)
-            }
         default:
             break
         }
+        
+        // Apply mirroring if needed
+        if mirrored {
+            // Adjust translation to account for mirroring in the current coordinate space.
+            transform = transform.translatedBy(x: size.width, y: 0)
+            transform = transform.scaledBy(x: -1, y: 1)
+        }
+        
+        // Debug: Print the final transformation matrix components
+        print("Final transform matrix:")
+        print("a: \(transform.a), b: \(transform.b)")
+        print("c: \(transform.c), d: \(transform.d)")
+        print("tx: \(transform.tx), ty: \(transform.ty)")
+        
         return transform
     }
 }
