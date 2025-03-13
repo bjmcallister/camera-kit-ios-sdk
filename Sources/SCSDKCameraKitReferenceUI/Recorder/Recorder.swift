@@ -87,10 +87,11 @@ public class Recorder {
     }
     
     public static func affineTransform(orientation: AVCaptureVideoOrientation, mirrored: Bool, size: CGSize)
-    -> CGAffineTransform
+        -> CGAffineTransform
     {
         var transform: CGAffineTransform = .identity
-        
+        print("Initial transform: \(transform)")
+
         // Apply rotation based on orientation
         switch orientation {
         case .portraitUpsideDown:
@@ -102,20 +103,21 @@ public class Recorder {
         default:
             break
         }
-        
-        // Apply mirroring if needed
+        print("After rotation: \(transform)")
+
         if mirrored {
-            // Adjust translation to account for mirroring in the current coordinate space.
+            print("Before mirroring: \(transform)")
             transform = transform.translatedBy(x: size.width, y: 0)
+            print("After translation for mirroring: \(transform)")
             transform = transform.scaledBy(x: -1, y: 1)
+            print("After scaling for mirroring: \(transform)")
         }
-        
-        // Debug: Print the final transformation matrix components
+
         print("Final transform matrix:")
         print("a: \(transform.a), b: \(transform.b)")
         print("c: \(transform.c), d: \(transform.d)")
         print("tx: \(transform.tx), ty: \(transform.ty)")
-        
+
         return transform
     }
 }
