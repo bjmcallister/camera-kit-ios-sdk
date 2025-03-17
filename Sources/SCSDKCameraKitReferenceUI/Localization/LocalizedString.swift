@@ -69,14 +69,14 @@ private func bestBundle(forPreferredLanguage preferredLanguage: String) -> Bundl
         bundle = Bundle(for: Stub.self)
     }
     let lProjURL: URL?
-    if let fullMatch = bundle.url(forResource: preferredLanguage, withExtension: Constants_local.lProjExtension) {
+    if let fullMatch = bundle.url(forResource: preferredLanguage, withExtension: Constants.lProjExtension) {
         lProjURL = fullMatch
     } else {
         // preferred language contains region code (ie. `es-US`) which may not have its own localization
         // so if not found, try to find localization for just the language code (ie. `es`)
         let components = NSLocale.components(fromLocaleIdentifier: preferredLanguage)
         if let languageCode = components[NSLocale.Key.languageCode.rawValue] {
-            lProjURL = bundle.url(forResource: languageCode, withExtension: Constants_local.lProjExtension)
+            lProjURL = bundle.url(forResource: languageCode, withExtension: Constants.lProjExtension)
         } else {
             lProjURL = nil
         }
@@ -87,6 +87,6 @@ private func bestBundle(forPreferredLanguage preferredLanguage: String) -> Bundl
     return Bundle(url: lProjURL)
 }
 
-private enum Constants_local {
+private enum Constants {
     static let lProjExtension = "lproj"
 }
