@@ -5,8 +5,8 @@ import SCSDKCameraKit
 import UIKit
 
 /// Reference implementation of a text input view for lenses that take text input.
-@objc
-public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessoryProvider {
+@objc public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessoryProvider {
+
     public let textView: UITextView = PlaceholderTextView()
     public let accessoryView = UIView()
     public var placeholderText: String? {
@@ -33,8 +33,7 @@ public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessory
             accessoryView.bottomAnchor.constraint(equalTo: textView.bottomAnchor, constant: Constants.borderInset),
         ])
         textView.backgroundColor = UIColor.ck_dynamic(
-            light: UIColor(white: 242.0 / 255.0, alpha: 1), dark: UIColor(white: 42.0 / 255.0, alpha: 1)
-        )
+            light: UIColor(white: 242.0 / 255.0, alpha: 1), dark: UIColor(white: 42.0 / 255.0, alpha: 1))
 
         textView.layer.cornerRadius = Constants.minimumTextViewHeight / 2
         textView.contentInset = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
@@ -52,13 +51,12 @@ public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessory
             borderView.topAnchor.constraint(equalTo: accessoryView.topAnchor),
         ])
         borderView.backgroundColor = UIColor.ck_dynamic(
-            light: UIColor(white: 238.0 / 255.0, alpha: 1), dark: UIColor(white: 41.0 / 255.0, alpha: 1)
-        )
+            light: UIColor(white: 238.0 / 255.0, alpha: 1), dark: UIColor(white: 41.0 / 255.0, alpha: 1))
 
-        self.preferredHeightConstraint = textView.heightAnchor.constraint(equalToConstant: Constants.minimumTextViewHeight)
+        preferredHeightConstraint = textView.heightAnchor.constraint(equalToConstant: Constants.minimumTextViewHeight)
         preferredHeightConstraint.identifier = "Preferred"
         textView.addConstraints([
-            preferredHeightConstraint,
+            preferredHeightConstraint
         ])
 
         super.init()
@@ -67,13 +65,12 @@ public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessory
         NotificationCenter.default.addObserver(
             forName: UITextView.textDidChangeNotification, object: textView, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
+            guard let self = self else { return }
             let height = self.textView.sizeThatFits(
                 CGSize(
                     width: self.textView.frame.width
                         - (self.textView.textContainerInset.left + self.textView.textContainerInset.right),
-                    height: .infinity
-                )
+                    height: .infinity)
             ).height
             let resolved = max(min(height, Constants.maximumTextViewHeight), Constants.minimumTextViewHeight)
             self.preferredHeightConstraint.constant = resolved
@@ -81,10 +78,12 @@ public class KeyboardAccessoryViewProvider: NSObject, TextInputKeyboardAccessory
             self.accessoryView.layoutIfNeeded()
         }
     }
+
 }
 
 /// Simple text view implementation that supports placeholder text.
 class PlaceholderTextView: UITextView {
+
     var placeholderText: String? {
         didSet {
             DispatchQueue.main.async { [weak self] in
@@ -100,8 +99,7 @@ class PlaceholderTextView: UITextView {
         addSubview(placeholderLabel)
         placeholderLabel.textColor = UIColor.ck_dynamic(
             light: UIColor(red: 154.0 / 255.0, green: 159.0 / 255.0, blue: 167.0 / 255.0, alpha: 1),
-            dark: UIColor(white: 97.0 / 255.0, alpha: 1)
-        )
+            dark: UIColor(white: 97.0 / 255.0, alpha: 1))
         updatePlaceholderFrame()
         NotificationCenter.default.addObserver(
             forName: UITextView.textDidChangeNotification, object: self, queue: .main
@@ -116,7 +114,6 @@ class PlaceholderTextView: UITextView {
         }
     }
 
-    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -129,17 +126,21 @@ class PlaceholderTextView: UITextView {
     func updatePlaceholderFrame() {
         placeholderLabel.frame = bounds.insetBy(dx: contentInset.left, dy: contentInset.top)
     }
+
 }
 
 extension KeyboardAccessoryViewProvider {
+
     enum Constants {
         static let minimumTextViewHeight: Double = 40
         static let maximumTextViewHeight: Double = 60
         static let borderInset: Double = 9
     }
+
 }
 
 extension UIColor {
+
     /// Convenience implementation of a pre-iOS 13 dynamic color support.
     /// - Parameters:
     ///   - light: Color to use in light mode, or pre-13.
@@ -161,4 +162,5 @@ extension UIColor {
             return light
         }
     }
+
 }

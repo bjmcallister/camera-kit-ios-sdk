@@ -5,6 +5,7 @@ import UIKit
 
 /// View that appears when the user taps on the camera view
 public class TapAnimationView: UIView {
+
     private lazy var outerRing: CALayer = {
         let outerRing = CALayer()
 
@@ -144,8 +145,7 @@ public class TapAnimationView: UIView {
             timingfunctions: [
                 CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.0, 1.0),
                 CAMediaTimingFunction(name: .easeInEaseOut),
-            ]
-        )
+            ])
 
         outerRing.add(animation, forKey: Constants.scaleAnimationKey)
     }
@@ -171,13 +171,11 @@ public class TapAnimationView: UIView {
             duration: Constants.animationStepDuration * 2,
             fromValue: NSValue(caTransform3D: CATransform3DMakeScale(0.0, 0.0, 1.0)),
             toValue: CATransform3DIdentity,
-            timingFunction: CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.0, 1.0)
-        )
+            timingFunction: CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.0, 1.0))
 
         innerCircle.add(animation, forKey: Constants.scaleAnimationKey)
     }
 
-    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -185,8 +183,9 @@ public class TapAnimationView: UIView {
 
 // MARK: Constants
 
-private extension TapAnimationView {
-    enum Constants {
+extension TapAnimationView {
+
+    fileprivate enum Constants {
         static let animationStepDuration: TimeInterval = 0.167
 
         static let innerCirclePadding: CGFloat = 2.5
@@ -201,4 +200,5 @@ private extension TapAnimationView {
         static let scaleAnimationKey = "scale"
         static let exposureAnimationKey = "exposure"
     }
+
 }

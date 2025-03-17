@@ -1,4 +1,5 @@
 //  Copyright Snap Inc. All rights reserved.
+//  CameraKit
 
 import ARKit
 import AVFoundation
@@ -7,6 +8,7 @@ import SCSDKCameraKit
 import UIKit
 
 public protocol CameraControllerUIDelegate: AnyObject {
+
     /// Notifies the delegate that the camera controller has resolved a new list of available lenses
     /// - Parameters:
     ///   - controller: The camera controller.
@@ -21,26 +23,6 @@ public protocol CameraControllerUIDelegate: AnyObject {
     /// - Parameter controller: The camera controller.
     func cameraControllerRequestedActivityIndicatorHide(_ controller: CameraController)
 
-    /// Notifies the delegate that the flash state is on in ring light mode and that the ring light effect should be shown.
-    /// - Parameter controller: The camera controller.
-    func cameraControllerRequestedRingLightShow(_ controller: CameraController)
-
-    /// Notifies the delegate that the flash state is no longer in ring light mode and that the ring light effect should be hidden.
-    /// - Parameter controller: The camera controller.
-    func cameraControllerRequestedRingLightHide(_ controller: CameraController)
-
-    /// Notifies the delegate that the flash state has changed such that the flash control should be hidden.
-    /// - Parameter controller: The camera controller.
-    func cameraControllerRequestedFlashControlHide(_ controller: CameraController)
-
-    /// Notifies the delegate that the snap attribution should be shown. For example, after the agreements have been accepted.
-    /// - Parameter controller: The camera controller.
-    func cameraControllerRequestedSnapAttributionViewShow(_ controller: CameraController)
-
-    /// Notifies the delegate that the snap attribution should be hidden. For example, when a video is being recorded.
-    /// - Parameter controller: The camera controller.
-    func cameraControllerRequestedSnapAttributionViewHide(_ controller: CameraController)
-
     /// Notifies the delegate that the camera position should be flipped.
     /// - Parameter controller: The camera controller.
     func cameraControllerRequestedCameraFlip(_ controller: CameraController)
@@ -52,22 +34,21 @@ public protocol CameraControllerUIDelegate: AnyObject {
     ///   - lens: The requesting lens.
     ///   - autohide: Whether or not the hint should be automatically hidden, after a callee-determined amount of time.
     func cameraController(
-        _ controller: CameraController, requestedHintDisplay hint: String, for lens: Lens, autohide: Bool
-    )
+        _ controller: CameraController, requestedHintDisplay hint: String, for lens: Lens, autohide: Bool)
 
     /// Notifies the delegate that any hints requested by the specified lens should be hidden
     /// - Parameters:
     ///   - controller: The camera controller.
     ///   - lens: The lens whose hints should be hidden.
     func cameraController(_ controller: CameraController, requestedHintHideFor lens: Lens)
+
 }
 
 // MARK: Class Definition and State
 
 /// A controller which manages the camera and lenses stack on behalf of its owner
-open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetcherObserver, LensHintDelegate,
-    MediaPickerViewDelegate, AdjustmentControlViewDelegate
-{
+open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetcherObserver, LensHintDelegate {
+
     // MARK: - Public API
 
     // MARK: Public vars
@@ -91,7 +72,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     public private(set) var photoCaptureOutput: PhotoCaptureOutput?
 
     /// An output used for recording videos.
-    public var recorder: Recorder?
+    public private(set) var recorder: Recorder?
 
     // MARK: Data providers
 
@@ -111,7 +92,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     /// The currently selected and active lens.
     public private(set) var currentLens: Lens?
 
-    /// List of lens repository groups to observe/show in carousel
+    /// List of lens repository groups to observe/show in lens picker
     public var groupIDs: [String] = [] {
         didSet {
             let removedIDs = Set(oldValue).subtracting(groupIDs)
@@ -126,25 +107,6 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
             // cameraKit.lenses.repository.cameraKit.lenses.repository.addObserver(self, specificLensID: "123", groupID: "1")
             // and then get the lens after by calling
             // cameraKit.lenses.repository.lens(id: "123", groupID: "1");
-        }
-    }
-
-    /// Whether or not the tone map adjustment is available for the current device.
-    /// This variable should be checked before showing any UI associated with the tone map adjustment.
-    public var isToneMapAdjustmentAvailable: Bool {
-        cameraKit.adjustments.processor?.isAdjustmentAvailable(ToneMapAdjustment()) ?? false
-    }
-
-    /// Whether or not the portrait adjustment is available for the current device.
-    /// This variable should be checked before showing any UI associated with the portrait adjustment.
-    public var isPortraitAdjustmentAvailable: Bool {
-        cameraKit.adjustments.processor?.isAdjustmentAvailable(PortraitAdjustment()) ?? false
-    }
-
-    /// The current state of the camera flash.
-    public var flashState: FlashState = .off {
-        didSet {
-            handleFlashStateChange(oldValue: oldValue)
         }
     }
 
@@ -196,8 +158,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
             configureLenses(
                 orientation: orientation,
                 textInputContextProvider: textInputContextProvider,
-                agreementsPresentationContextProvider: agreementsPresentationContextProvider
-            )
+                agreementsPresentationContextProvider: agreementsPresentationContextProvider)
             completion?()
         }
     }
@@ -217,35 +178,31 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         // details of ARSession configuration.
         let arInput = ARSessionInput()
 
-        // If your lenses need TrueDepth-based face tracking (for ARKit face lenses or true size lenses),
-        // use this initializer instead. Please note your app will be subject to additional app review,
-        // concerning your usage of the TrueDepth camera.
-        /*
-         let config = ARFaceTrackingConfiguration()
-         if #available(iOS 13.0, *) {
-             config.maximumNumberOfTrackedFaces = 0
-         }
-         let arInput = ARSessionInput(session: ARSession(), frontCameraConfiguration: config)
-          */
-
         // Start the actual CameraKit session. Once the session is started, CameraKit will begin processing frames and
         // sending output. The lens processor (cameraKit.lenses.processor) will be instantiated at this point, and
         // you can start sending commands to it (such as applying/clearing lenses).
+  
         cameraKit.start(
             input: input,
             arInput: arInput,
             cameraPosition: .front,
-            videoOrientation: orientation,
+            videoOrientation: .portraitUpsideDown,
             dataProvider: configureDataProvider(),
             hintDelegate: self,
             textInputContextProvider: textInputContextProvider,
             agreementsPresentationContextProvider: agreementsPresentationContextProvider
         )
-
+        
         // Start the capture session. It's important you start the capture session after starting the CameraKit session
         // because the CameraKit input and session configures the capture session implicitly and you may run into a
         // race condition which causes some audio and video output frames to be lost, resulting in a blank preview view
-        input.startRunning()
+        DispatchQueue.global(qos: .userInteractive).async {
+            input.startRunning()
+            //self.configureCaptureSession()
+        }
+        
+
+        cameraKit.presentAgreementsImmediately()
     }
 
     /// Configures the data provider for lenses. Subclasses may override this to customize their data provider.
@@ -255,8 +212,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         // but if you want to handle specific data provider(s), pass them in here, example:
         DataProviderComponent(
             deviceMotion: nil, userData: UserDataProvider(), lensHint: nil, location: nil,
-            mediaPicker: lensMediaProvider
-        )
+            mediaPicker: lensMediaProvider)
     }
 
     // MARK: Camera Control
@@ -270,13 +226,13 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
 
     /// Save whatever the current zoom level is.
     public func finalizeZoom() {
+        print("zooming")
         lastZoomLevel = zoomLevel
     }
 
     /// Flips the camera to the other side
     public func flipCamera() {
         cameraPosition = cameraPosition == .front ? .back : .front
-        updateFlashAfterFlip()
     }
 
     /// Options to support when setting a point of interest
@@ -301,8 +257,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     ///  - point: The point at which to set the point of interest. Note that the point provided should conform to the capture device's coordinate system.
     ///  - options: The operations to enable setting the point of interest for. Focusing and rebalancing exposure at the specified point enabled by default.
     public func setPointOfInterest(at point: CGPoint, for options: PointOfInterestOptions = [.exposure, .focus]) {
-        guard
-            !(cameraKit.activeInput is ARInput),
+        guard !(cameraKit.activeInput is ARInput),
             let device = cameraInputDevice
         else {
             return
@@ -311,9 +266,8 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         do {
             try device.lockForConfiguration()
 
-            if
-                options.contains(.exposure), device.isExposurePointOfInterestSupported,
-                device.isExposureModeSupported(.autoExpose)
+            if options.contains(.exposure) && device.isExposurePointOfInterestSupported
+                && device.isExposureModeSupported(.autoExpose)
             {
                 isAdjustingFocusObservation = device.observe(
                     \.isAdjustingExposure,
@@ -325,9 +279,8 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
                 device.exposureMode = .autoExpose
             }
 
-            if
-                options.contains(.focus), device.isFocusPointOfInterestSupported,
-                device.isFocusModeSupported(.autoFocus)
+            if options.contains(.focus) && device.isFocusPointOfInterestSupported
+                && device.isFocusModeSupported(.autoFocus)
             {
                 isAdjustingExposureObservation = device.observe(
                     \.isAdjustingFocus,
@@ -350,16 +303,14 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
 
     /// Takes a photo.
     /// - Parameter completion: completion to be called with the photo or an error.
-    open func takePhoto(completion: ((UIImage?, Error?) -> Void)?) {
+    public func takePhoto(completion: ((UIImage?, Error?) -> Void)?) {
         let settings = AVCapturePhotoSettings()
-        settings.flashMode = flashState.captureDeviceFlashMode
 
         photoCaptureOutput?.capture(
             with: settings,
             outputSize: OutputSizeHelper.normalizedSize(
                 for: cameraKit.activeInput.frameSize,
-                aspectRatio: UIScreen.main.bounds.width / UIScreen.main.bounds.height
-            )
+                aspectRatio: UIScreen.main.bounds.width / UIScreen.main.bounds.height)
         ) { image, error in
             completion?(image, error)
         }
@@ -367,13 +318,26 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
 
     /// Configures the photo output to be ready to capture a new photo.
     fileprivate func configurePhotoCapture() {
-        // Add AVCapturePhotoOutput to capture session
-        let avPhotoCaptureOutput = AVCapturePhotoOutput()
-        if captureSession.canAddOutput(avPhotoCaptureOutput) {
-            captureSession.addOutput(avPhotoCaptureOutput)
+        let avPhotoCaptureOutput: AVCapturePhotoOutput?
+        
+        if #available(iOS 14.0, *) {
+            
+            if ProcessInfo().isiOSAppOnMac {
+                // `AVCapturePhotoOutput` is not fully supported on Mac for lens rendering. Therefore, we set it to `nil`, which forces `PhotoCaptureOutput` to use a pixel buffer from the video stream as the source for captured photos.
+                avPhotoCaptureOutput = nil
+            } else {
+                let cpo = AVCapturePhotoOutput()
+                if captureSession.canAddOutput(cpo) {
+                    captureSession.addOutput(cpo)
+                }
+                avPhotoCaptureOutput = cpo
+            }
+        } else {
+            avPhotoCaptureOutput = nil
         }
+        
         photoCaptureOutput = PhotoCaptureOutput(capturePhotoOutput: avPhotoCaptureOutput)
-        if let photoCaptureOutput {
+        if let photoCaptureOutput = photoCaptureOutput {
             cameraKit.add(output: photoCaptureOutput)
         }
     }
@@ -391,7 +355,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         }
 
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
+            guard let self = self else { return }
             let lenses = self.groupIDs.flatMap {
                 self.cameraKit.lenses.repository.lenses(groupID: $0)
             }
@@ -407,8 +371,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     // MARK: LensPrefetcherObserver
 
     public func prefetcher(_ prefetcher: LensPrefetcher, didUpdate lens: Lens, status: LensFetchStatus) {
-        guard
-            let currentLens,
+        guard let currentLens = currentLens,
             lens.id == currentLens.id,
             lens.groupId == currentLens.groupId
         else {
@@ -423,81 +386,29 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
             }
         }
     }
-    
-    // MARK: Recorder 
-    
-    /// Configures the recorder to be ready to record a new video.
-    open func configureRecorder() {
-        if let old = recorder {
-            cameraKit.remove(output: old.output)
-        }
-        recorder = try? Recorder(
-            url: URL(fileURLWithPath: "\(NSTemporaryDirectory())\(UUID().uuidString).mp4"),
-            orientation: cameraKit.activeInput.frameOrientation,
-            size: OutputSizeHelper.normalizedSize(
-                for: cameraKit.activeInput.frameSize,
-                aspectRatio: 9 / 16,
-                orientation: cameraKit.activeInput.frameOrientation
-            )
-        )
-        if let recorder {
-            cameraKit.add(output: recorder.output)
-        }
-    }
+
+    // MARK: Recording
 
     /// Begin recording video.
-    open func startRecording() {
-        guard let device = cameraInputDevice else {
-            return
-        }
-        do {
-            try device.lockForConfiguration()
-            if device.isTorchModeSupported(flashState.captureDeviceTorchMode) {
-                device.torchMode = flashState.captureDeviceTorchMode
-            }
-            device.unlockForConfiguration()
-        } catch {
-            print("[CameraKit] Failed to lock device for configuration when trying to configure torch mode.")
-            return
-        }
-
-        uiDelegate?.cameraControllerRequestedSnapAttributionViewHide(self)
+    public func startRecording() {
         configureRecorder()
         recorder?.startRecording()
     }
 
     /// Cancel recording video.
-    open func cancelRecording() {
+    public func cancelRecording() {
         finishRecording(completion: nil)
     }
 
     /// Finish recording the video.
     /// - Parameter completion: completion to be called with a URL to the recorded video or an error.
-    open func finishRecording(completion: ((URL?, Error?) -> Void)?) {
-        guard let recorder else { return }
-        recorder.finishRecording { [weak self] url, error in
-            guard let device = self?.cameraInputDevice else {
-                DispatchQueue.main.async {
-                    completion?(url, error)
-                }
-                return
-            }
-
-            do {
-                try device.lockForConfiguration()
-                if device.isTorchModeSupported(.off) {
-                    device.torchMode = .off
-                }
-                device.unlockForConfiguration()
-            } catch {
-                print("[CameraKit] Failed to lock device for configuration when trying to disable camera torch")
-            }
-
+    public func finishRecording(completion: ((URL?, Error?) -> Void)?) {
+        guard let recorder = recorder else { return }
+        recorder.finishRecording { url, error in
             DispatchQueue.main.async {
                 completion?(url, error)
             }
         }
-        uiDelegate?.cameraControllerRequestedSnapAttributionViewShow(self)
     }
 
     // MARK: Lens Application
@@ -510,7 +421,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         lensQueue.async { [weak self] in
             // set current lens right away so we don't apply same lens twice
             self?.currentLens = lens
-            guard let self, let processor = self.cameraKit.lenses.processor else {
+            guard let self = self, let processor = self.cameraKit.lenses.processor else {
                 completion?(false)
                 return
             }
@@ -538,7 +449,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     public func clearLens(willReapply: Bool = false, completion: ((Bool) -> Void)? = nil) {
         lensQueue.async {
             self.cameraKit.lenses.processor?.clear { completed in
-                if !willReapply, completed {
+                if !willReapply && completed {
                     self.currentLens = nil
                 }
 
@@ -549,47 +460,8 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
 
     /// If a lens has already been applied, reapply it.
     public func reapplyCurrentLens() {
-        guard let currentLens else { return }
+        guard let currentLens = currentLens else { return }
         cameraKit.lenses.processor?.apply(lens: currentLens, launchData: nil, completion: nil)
-    }
-
-    // MARK: Adjustments Application
-
-    /// Enables the tone map adjustment.
-    /// - Returns: Float representing the intensity of the tone map effect.
-    /// - Note: Before calling this function, check whether or not the adjustment is available for the device. See `isToneMapAdjustmentAvailable`.
-    public func enableToneMapAdjustment() -> Float? {
-        toneMapController = try? cameraKit.adjustments.processor?.apply(adjustment: ToneMapAdjustment())
-        return Float(toneMapController?.amount ?? 0)
-    }
-
-    /// Disables the tone map adjustment.
-    public func disableToneMapAdjustment() {
-        guard let toneMapController else {
-            return
-        }
-
-        cameraKit.adjustments.processor?.remove(toneMapController)
-        self.toneMapController = nil
-    }
-
-    /// Enables the portrait adjustment.
-    /// - Returns: Float representing the intensity of the portrait blur effect.
-    /// - Note: Before calling this function, check whether or not the adjustment is available for the device. See `isPortraitAdjustmentAvailable`.
-    public func enablePortraitAdjustment() -> Float? {
-        portraitController = try? cameraKit.adjustments.processor?.apply(adjustment: PortraitAdjustment())
-
-        return Float(portraitController?.blur ?? 0)
-    }
-
-    /// Disables the portrait adjustment.
-    public func disablePortraitAdjustment() {
-        guard let portraitController else {
-            return
-        }
-
-        cameraKit.adjustments.processor?.remove(portraitController)
-        self.portraitController = nil
     }
 
     // MARK: LensHintDelegate
@@ -604,45 +476,13 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
         uiDelegate?.cameraController(self, requestedHintHideFor: lens)
     }
 
-    // MARK: MediaPickerViewDelegate
-
-    public func mediaPickerView(_ mediaPickerView: MediaPickerView, selectedAsset: LensMediaPickerProviderAsset) {
-        mediaPickerView.showLoadingIndicator(for: selectedAsset)
-        lensMediaProvider.loadAndApplyOriginalMedia(from: selectedAsset) {
-            mediaPickerView.hideLoadingIndicator(for: selectedAsset)
-        }
-    }
-
-    // MARK: AdjustmentsControlViewDelegate
-
-    public func adjustmentControlView(_ control: AdjustmentControlView, sliderValueChanged value: Double) {
-        switch AdjustmentControlView.Variant(rawValue: control.tag) {
-        case .tone: toneMapController?.amount = value
-        case .portrait: portraitController?.blur = value
-        default: break
-        }
-    }
-
     // MARK: - Private API
 
     // MARK: Private vars
 
-    /// Controller for adjusting the applied tone map adjustment.
-    private var toneMapController: ToneMapAdjustmentController?
-
-    /// Controller for adjusting the applied portrait adjustment.
-    private var portraitController: PortraitAdjustmentController?
-
     /// Temporary state that holds the starting point for the last zoom level
     /// Since pinching is a relative operation, we need to keep whatever it was left at last to compare.
     private var lastZoomLevel: CGFloat = 1
-
-    /// State that holds the last flash mode for when the front camera flash was enabled.
-    /// Used for selecting the correct flash mode when flipping from the back to the front camera with flash enabled.
-    private var lastFrontFlashMode: FlashMode?
-
-    /// Temporary state that holds the brightness that should be restored after the ring light is disabled.
-    public var brightnessToRestore: CGFloat?
 
     /// serial queue used to apply/clear lenses
     fileprivate let lensQueue = DispatchQueue(label: "com.snap.camerakit.sample.lensqueue", qos: .userInitiated)
@@ -650,7 +490,7 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
     /// The current camera input device
     fileprivate var cameraInputDevice: AVCaptureDevice? {
         captureSession.inputs
-            .compactMap { ($0 as? AVCaptureDeviceInput)?.device }
+            .compactMap({ ($0 as? AVCaptureDeviceInput)?.device })
             .first(where: { $0.hasMediaType(.video) })
     }
 
@@ -661,9 +501,10 @@ open class CameraController: NSObject, LensRepositoryGroupObserver, LensPrefetch
 
 // MARK: Camera Pipeline Configuration
 
-private extension CameraController {
+extension CameraController {
+
     /// Configures the capture session.
-    func configureCaptureSession() {
+    fileprivate func configureCaptureSession() {
         captureSession.beginConfiguration()
         configureDevice(for: .video)
         captureSession.commitConfiguration()
@@ -671,10 +512,10 @@ private extension CameraController {
 
     /// Prompts the user for access, and then calls a completion closure. If the user has already granted access, calls the closure synchronously.
     /// - Parameter completion: the completion closure to call.
-    func promptForAccessIfNeeded(completion: @escaping () -> Void) {
+    fileprivate func promptForAccessIfNeeded(completion: @escaping () -> Void) {
         guard
             AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined
-            || AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined
+                || AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined
         else {
             completion()
             return
@@ -692,23 +533,47 @@ private extension CameraController {
     /// Configures the device specified.
     /// - Parameter mediaType: the media type, audio or video
     func configureDevice(for mediaType: AVMediaType) {
-        guard
-            let device = mediaType == .video
-            ? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition)
-            : AVCaptureDevice.default(for: mediaType),
-            let input = try? AVCaptureDeviceInput(device: device),
-            captureSession.canAddInput(input)
-        else {
+        var device: AVCaptureDevice?
+        if mediaType == .video {
+            // Attempt to use an external camera if available, for iOS 17.0 or later
+            if #available(iOS 17.0, *) {
+                // Try to find an external camera first
+                let externalDevices = AVCaptureDevice.DiscoverySession(
+                    deviceTypes: [.external],
+                    mediaType: .video,
+                    position: .unspecified
+                ).devices
+                if let firstExternalDevice = externalDevices.first {
+                    device = firstExternalDevice
+                    print("device::", device ?? "")
+                }
+            }
+
+            // If no device is selected yet, fall back to the built-in wide-angle camera
+            if device == nil {
+                device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition)
+            }
+        } else {
+            // For non-video media types, just use the default device
+            device = AVCaptureDevice.default(for: mediaType)
+        }
+
+        guard let device, let input = try? AVCaptureDeviceInput(device: device), captureSession.canAddInput(input) else {
             return
         }
+
+        // Remove existing inputs to avoid conflicts
+        for input in captureSession.inputs {
+            captureSession.removeInput(input)
+        }
+
         captureSession.addInput(input)
     }
 
     /// Directly sets the zoom level, if possible. Certain inputs may ignore calls to this function (eg: ARKit)
     private var zoomLevel: CGFloat {
         get {
-            guard
-                !(cameraKit.activeInput is ARInput),
+            guard !(cameraKit.activeInput is ARInput),
                 let device = cameraInputDevice
             else {
                 return 1
@@ -716,8 +581,7 @@ private extension CameraController {
             return device.videoZoomFactor
         }
         set {
-            guard
-                !(cameraKit.activeInput is ARInput),
+            guard !(cameraKit.activeInput is ARInput),
                 let device = cameraInputDevice
             else {
                 return
@@ -730,13 +594,40 @@ private extension CameraController {
                 print("[CameraKit] Failed to lock device for configuration when trying to adjust zoom level")
                 return
             }
+
         }
     }
+
+}
+
+// MARK: Recording
+
+extension CameraController {
+
+    /// Configures the recorder to be ready to record a new video.
+    fileprivate func configureRecorder() {
+        if let old = recorder {
+            cameraKit.remove(output: old.output)
+        }
+        recorder = try? Recorder(
+            url: URL(fileURLWithPath: "\(NSTemporaryDirectory())\(UUID().uuidString).mp4"),
+            orientation: cameraKit.activeInput.frameOrientation,
+            size: OutputSizeHelper.normalizedSize(
+                for: cameraKit.activeInput.frameSize,
+                aspectRatio: UIScreen.main.bounds.width / UIScreen.main.bounds.height,
+                orientation: cameraKit.activeInput.frameOrientation)
+        )
+        if let recorder = recorder {
+            cameraKit.add(output: recorder.output)
+        }
+    }
+
 }
 
 // MARK: Lens Application
 
 extension CameraController {
+
     /// Generates the launch data for the lens. By default, this is just the vendor data attached to the lens.
     /// - Parameter lens: the lens to generate launch data for
     /// - Returns: launch data.
@@ -751,36 +642,37 @@ extension CameraController {
         }
         return launchDataBuilder.launchData ?? EmptyLensLaunchData()
     }
+
 }
 
 // MARK: Notifications
 
 extension CameraController {
+
     /// Observes notifications relevant to the camera controller.
-    private func configureNotifications() {
+    fileprivate func configureNotifications() {
         NotificationCenter.default.addObserver(
-            self, selector: #selector(appWillEnterForegroundNotification(_:)),
-            name: UIApplication.willEnterForegroundNotification, object: nil
-        )
+            self, selector: #selector(self.appWillEnterForegroundNotification(_:)),
+            name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
     /// Notifies the camera controller that the app is about to background. The app must stop processing until re-foregrounded.
     /// - Parameter notification: the NSNotification.
-    @objc
-    private func appWillEnterForegroundNotification(_ notification: Notification) {
+    @objc private func appWillEnterForegroundNotification(_ notification: Notification) {
         // SDK pauses/disables lens in background, so re-apply the lens when entering foreground
-        guard let currentLens else { return }
+        guard let currentLens = currentLens else { return }
         applyLens(currentLens)
     }
+
 }
 
 // MARK: Key-Value Observing
 
 extension CameraController {
+
     /// Restores continuous autoexposure after the camera finishes a user-initiated tap to focus
     private func restoreContinuousAutoExposure(_ device: AVCaptureDevice, _ change: NSKeyValueObservedChange<Bool>) {
-        guard
-            let isAdjustingExposure = change.newValue,
+        guard let isAdjustingExposure = change.newValue,
             !isAdjustingExposure
         else {
             return
@@ -800,8 +692,7 @@ extension CameraController {
 
     /// Restores continuous autofocus after the camera finishes a user-initiated tap to focus
     private func restoreContinuousAutoFocus(_ device: AVCaptureDevice, _ change: NSKeyValueObservedChange<Bool>) {
-        guard
-            let isAdjustingFocus = change.newValue,
+        guard let isAdjustingFocus = change.newValue,
             !isAdjustingFocus
         else {
             return
@@ -818,11 +709,13 @@ extension CameraController {
             return
         }
     }
+
 }
 
 // MARK: Lens facing preference
 
 extension CameraController {
+
     /// Set camera position based on lens facing preference.
     private func changeCameraPosition(with lensFacing: LensFacingPreference) {
         var position: AVCaptureDevice.Position?
@@ -832,123 +725,10 @@ extension CameraController {
         default: break
         }
 
-        if
-            let position,
+        if let position = position,
             position != cameraPosition
         {
             uiDelegate?.cameraControllerRequestedCameraFlip(self)
-        }
-    }
-}
-
-// MARK: Flash
-
-public extension CameraController {
-    /// Enumerates the different flash enabled modes.
-    enum FlashMode: Int {
-        case standard
-        case ring
-    }
-
-    /// Enumerates the different possible flash states.
-    enum FlashState: Equatable {
-        case off
-        case on(FlashMode)
-
-        /// The AVCaptureDevice.FlashMode that should be used when taking photos as per the FlashState.
-        public var captureDeviceFlashMode: AVCaptureDevice.FlashMode {
-            switch self {
-            case .off:
-                return .off
-            case let .on(flashMode):
-                return flashMode == .standard ? .on : .off
-            }
-        }
-
-        /// The AVCaptureDevice.torchMode that should be used when recording videos as per the FlashState.
-        public var captureDeviceTorchMode: AVCaptureDevice.TorchMode {
-            switch self {
-            case .off:
-                return .off
-            case let .on(flashMode):
-                return flashMode == .standard ? .on : .off
-            }
-        }
-    }
-
-    /// Updates the flash state after a camera flip occurs.
-    private func updateFlashAfterFlip() {
-        switch flashState {
-        case .off:
-            break
-        case let .on(flashMode):
-            if cameraPosition == .front {
-                flashState = .on(lastFrontFlashMode ?? .standard)
-            } else {
-                lastFrontFlashMode = flashMode
-                flashState = .on(.standard)
-            }
-        }
-    }
-
-    /// Enables the camera flash with the appopriate flash mode as per camera position and prior user selections.
-    func enableFlash() {
-        if cameraPosition == .front {
-            flashState = .on(lastFrontFlashMode ?? .standard)
-        } else {
-            flashState = .on(.standard)
-        }
-    }
-
-    /// Disables the camera flash.
-    func disableFlash() {
-        switch flashState {
-        case .off:
-            break
-        case let .on(flashMode):
-            if cameraPosition == .front {
-                lastFrontFlashMode = flashMode
-            }
-            flashState = .off
-        }
-    }
-
-    /// Updates the UI as necessary upon changes to `flashState`.
-    /// Called in the `didSet` property observer of `flashState`.
-    private func handleFlashStateChange(oldValue: FlashState) {
-        guard flashState != oldValue else { return }
-
-        restoreBrightnessIfNecessary()
-        switch flashState {
-        case .off:
-            uiDelegate?.cameraControllerRequestedRingLightHide(self)
-            uiDelegate?.cameraControllerRequestedFlashControlHide(self)
-        case let .on(flashMode):
-            switch flashMode {
-            case .standard:
-                uiDelegate?.cameraControllerRequestedRingLightHide(self)
-            case .ring:
-                uiDelegate?.cameraControllerRequestedRingLightShow(self)
-                increaseBrightnessIfNecessary()
-            }
-        }
-    }
-
-    /// Restores brightness to what it was before the ring light was enabled.
-    func restoreBrightnessIfNecessary() {
-        if let brightnessToRestore {
-            UIScreen.main.brightness = brightnessToRestore
-            if flashState != .on(.ring) {
-                self.brightnessToRestore = nil
-            }
-        }
-    }
-
-    /// Increases brightness to max if the ring light is enabled.
-    func increaseBrightnessIfNecessary() {
-        if flashState == .on(.ring) {
-            brightnessToRestore = UIScreen.main.brightness
-            UIScreen.main.brightness = 1.0
         }
     }
 }

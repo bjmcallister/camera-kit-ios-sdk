@@ -1,10 +1,11 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
+//  CameraKitSandbox
 
 import UIKit
 
 /// Delegate to receive updates for camera button view
 public protocol CameraButtonDelegate: AnyObject {
+
     /// Called when user taps camera button
     /// - Parameter cameraButton: camera button view
     func cameraButtonTapped(_ cameraButton: CameraButton)
@@ -21,6 +22,7 @@ public protocol CameraButtonDelegate: AnyObject {
     /// Called when user stops holding down camera button
     /// - Parameter cameraButton: camera button view
     func cameraButtonHoldEnded(_ cameraButton: CameraButton)
+
 }
 
 /// Camera ring view for capturing and recording state
@@ -41,7 +43,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
     /// Line width for camera ring
     public var ringWidth: CGFloat {
         get {
-            circleOutline.lineWidth
+            return circleOutline.lineWidth
         }
         set {
             circleOutline.lineWidth = newValue
@@ -55,7 +57,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
     /// Ring color while recording
     public var ringColor: UIColor? {
         get {
-            circleFill.strokeColor != nil ? UIColor(cgColor: circleFill.strokeColor!) : nil
+            return circleFill.strokeColor != nil ? UIColor(cgColor: circleFill.strokeColor!) : nil
         }
         set {
             circleFill.strokeColor = newValue?.cgColor
@@ -76,8 +78,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
     /// until the gesture is recognized in which it will then eat up all the touches
     public private(set) lazy var pressGestureRecognizer: UILongPressGestureRecognizer = {
         let gestureRecognizer = UILongPressGestureRecognizer(
-            target: self, action: #selector(self.longPressGestureRecognized(_:))
-        )
+            target: self, action: #selector(self.longPressGestureRecognized(_:)))
         gestureRecognizer.minimumPressDuration = 0.10
         gestureRecognizer.delegate = self
         return gestureRecognizer
@@ -109,7 +110,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
     }()
 
     /// The time the hold started
-    private var holdStartTime: Date?
+    private var holdStartTime: Date? = nil
 
     // MARK: Init
 
@@ -118,7 +119,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
         commonInit()
     }
 
-    override public init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
     }
@@ -141,27 +142,26 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
         setContentHuggingPriority(.required, for: .vertical)
     }
 
-    override public func layoutSubviews() {
+    public override func layoutSubviews() {
         super.layoutSubviews()
 
         let radius = bounds.size.width / 2.0
 
         let path = UIBezierPath(
             arcCenter: CGPoint(x: radius, y: radius), radius: radius, startAngle: CGFloat.pi / -2.0,
-            endAngle: 3 * CGFloat.pi / 2.0, clockwise: true
-        )
+            endAngle: 3 * CGFloat.pi / 2.0, clockwise: true)
 
         circleOutline.path = path.cgPath
         circleFill.path = path.cgPath
     }
 
-    override public var intrinsicContentSize: CGSize {
-        CGSize(width: Constants.ringSize, height: Constants.ringSize)
+    public override var intrinsicContentSize: CGSize {
+        return CGSize(width: Constants.ringSize, height: Constants.ringSize)
     }
 
     // MARK: Gesture Recognizer
 
-    override public func willMove(toSuperview newSuperview: UIView?) {
+    public override func willMove(toSuperview newSuperview: UIView?) {
         pressGestureRecognizer.view?.removeGestureRecognizer(pressGestureRecognizer)
         tapGestureRecognizer.view?.removeGestureRecognizer(tapGestureRecognizer)
         newSuperview?.addGestureRecognizer(pressGestureRecognizer)
@@ -169,22 +169,19 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
         super.willMove(toSuperview: newSuperview)
     }
 
-    @objc
-    private func tapGestureRecognized(_ gestureRecognizer: UITapGestureRecognizer) {
+    @objc private func tapGestureRecognized(_ gestureRecognizer: UITapGestureRecognizer) {
         guard gestureRecognizer.state == .ended else { return }
 
         delegate?.cameraButtonTapped(self)
     }
 
-    @objc
-    private func longPressGestureRecognized(_ gestureRecognizer: UILongPressGestureRecognizer) {
+    @objc private func longPressGestureRecognized(_ gestureRecognizer: UILongPressGestureRecognizer) {
         switch gestureRecognizer.state {
         case .began:
             holdStartTime = Date()
             startRecordingAnimation()
         case .ended, .cancelled, .failed:
-            if
-                let holdStartTime = holdStartTime,
+            if let holdStartTime = holdStartTime,
                 abs(holdStartTime.timeIntervalSinceNow) >= minimumHoldDuration
             {
                 // User held for minimum specified threshold
@@ -207,8 +204,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        guard
-            gestureRecognizer === pressGestureRecognizer,
+        guard gestureRecognizer === pressGestureRecognizer,
             allowWhileRecording.contains(otherGestureRecognizer)
         else {
             return false
@@ -287,7 +283,7 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
     private func animateOutlineColorFill(duration: TimeInterval) {
         let animation = CABasicAnimation(keyPath: "fillColor")
         animation.fromValue = UIColor.clear.cgColor
-        animation.toValue = UIColor(hex: 0xD4D4D4).withAlphaComponent(0.5).cgColor
+        animation.toValue = UIColor(hex: 0xd4d4d4).withAlphaComponent(0.5).cgColor
         animation.duration = duration
         animation.fillMode = .forwards
         animation.isRemovedOnCompletion = false
@@ -327,18 +323,17 @@ public class CameraButton: UIView, UIGestureRecognizerDelegate {
         let recordingPath = UIBezierPath(
             arcCenter: CGPoint(x: recordingRadius, y: recordingRadius), radius: recordingRadius + 7,
             startAngle: CGFloat.pi / -2.0,
-            endAngle: 3 * CGFloat.pi / 2.0, clockwise: true
-        )
+            endAngle: 3 * CGFloat.pi / 2.0, clockwise: true)
         circleFill.path = recordingPath.cgPath
     }
 }
 
 extension CameraButton: CAAnimationDelegate {
+
     public func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        guard
-            flag,
+        guard flag,
             circleFill.animation(forKey: Constants.fillStrokeKey) === anim
-        else { // guard for finished in case it was removed by `stopRecordingAnimation()`
+        else {  // guard for finished in case it was removed by `stopRecordingAnimation()`
             return
         }
 
@@ -346,6 +341,7 @@ extension CameraButton: CAAnimationDelegate {
         pressGestureRecognizer.isEnabled = false
         pressGestureRecognizer.isEnabled = true
     }
+
 }
 
 // MARK: Constants

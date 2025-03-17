@@ -1,19 +1,11 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
+//  CameraKitSandbox
 
 import Photos
 import UIKit
 
 /// Base preview view controller that describes properties and views of all preview controllers
 public class PreviewViewController: UIViewController {
-    // MARK: Preview Properties
-
-    /// Snapchat delegate for open requests
-    public weak var snapchatDelegate: SnapchatDelegate? {
-        didSet {
-            snapchatButton.isHidden = snapchatDelegate == nil
-        }
-    }
 
     /// Callback when user presses close button and dismisses preview view controller
     public var onDismiss: (() -> Void)?
@@ -24,20 +16,7 @@ public class PreviewViewController: UIViewController {
         let button = UIButton()
         button.accessibilityIdentifier = PreviewElements.closeButton.id
         button.setImage(
-            UIImage(named: "ck_close_x", in: BundleHelper.resourcesBundle, compatibleWith: nil), for: .normal
-        )
-        button.translatesAutoresizingMaskIntoConstraints = false
-
-        return button
-    }()
-
-    fileprivate let snapchatButton: UIButton = {
-        let button = UIButton()
-        button.accessibilityIdentifier = PreviewElements.snapchatButton.id
-        button.isHidden = true
-        button.setImage(
-            UIImage(named: "ck_snapchat_app_icon", in: BundleHelper.resourcesBundle, compatibleWith: nil), for: .normal
-        )
+            UIImage(named: "ck_close_x", in: BundleHelper.resourcesBundle, compatibleWith: nil), for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
 
         return button
@@ -61,7 +40,7 @@ public class PreviewViewController: UIViewController {
     }()
 
     fileprivate lazy var bottomButtonStackView: UIStackView = {
-        let stackView = UIStackView(arrangedSubviews: [snapchatButton, saveButton, shareButton])
+        let stackView = UIStackView(arrangedSubviews: [saveButton, shareButton])
         stackView.alignment = .center
         stackView.axis = .horizontal
         stackView.distribution = .fill
@@ -86,18 +65,11 @@ public class PreviewViewController: UIViewController {
 
     // MARK: Overridable Actions
 
-    @objc
-    open func openSnapchatPressed(_ sender: UIButton) {
-        fatalError("open Snapchat action has to be implemented by subclass")
-    }
-
-    @objc
-    open func savePreviewPressed(_ sender: UIButton) {
+    func savePreview() {
         fatalError("save preview action has to be implemented by subclass")
     }
 
-    @objc
-    open func sharePreviewPressed(_ sender: UIButton) {
+    func sharePreview() {
         fatalError("share preview action has to be implemented by subclass")
     }
 }
@@ -105,8 +77,8 @@ public class PreviewViewController: UIViewController {
 // MARK: Close Button
 
 extension PreviewViewController {
-    private func setupCloseButton() {
-        closeButton.addTarget(self, action: #selector(closeButtonPressed(_:)), for: .touchUpInside)
+    fileprivate func setupCloseButton() {
+        closeButton.addTarget(self, action: #selector(self.closeButtonPressed(_:)), for: .touchUpInside)
         view.addSubview(closeButton)
         NSLayoutConstraint.activate([
             closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 32.0),
@@ -114,8 +86,7 @@ extension PreviewViewController {
         ])
     }
 
-    @objc
-    private func closeButtonPressed(_ sender: UIButton) {
+    @objc private func closeButtonPressed(_ sender: UIButton) {
         onDismiss?()
         dismiss(animated: true, completion: nil)
     }
@@ -124,10 +95,9 @@ extension PreviewViewController {
 // MARK: Bottom Button Bar
 
 extension PreviewViewController {
-    private func setupBottomButtonBar() {
-        snapchatButton.addTarget(self, action: #selector(openSnapchatPressed(_:)), for: .touchUpInside)
-        saveButton.addTarget(self, action: #selector(savePreviewPressed(_:)), for: .touchUpInside)
-        shareButton.addTarget(self, action: #selector(sharePreviewPressed(_:)), for: .touchUpInside)
+    fileprivate func setupBottomButtonBar() {
+        saveButton.addTarget(self, action: #selector(self.savePreviewPressed(_:)), for: .touchUpInside)
+        shareButton.addTarget(self, action: #selector(self.sharePreviewPressed(_:)), for: .touchUpInside)
         view.addSubview(bottomButtonStackView)
         NSLayoutConstraint.activate([
             bottomButtonStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16.0),
@@ -135,16 +105,20 @@ extension PreviewViewController {
         ])
     }
 
-    @objc
-    private func savePreviewPressedWithAuthorization(_ sender: UIButton) {
+    @objc private func savePreviewPressed(_ sender: UIButton) {
         guard PHPhotoLibrary.authorizationStatus() == .authorized else {
             PHPhotoLibrary.requestAuthorization { status in
                 guard status == .authorized else { return }
-                self.savePreviewPressed(sender)
+                self.savePreview()
             }
 
             return
         }
-        savePreviewPressed(sender)
+
+        savePreview()
+    }
+
+    @objc private func sharePreviewPressed(_ sender: UIButton) {
+        sharePreview()
     }
 }

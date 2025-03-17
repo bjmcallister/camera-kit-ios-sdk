@@ -5,6 +5,7 @@ import UIKit
 
 /// Provides access to Snapchat typography in all supported weights.
 public extension UIFont {
+
     static func sc_ultraLightFont(size: CGFloat) -> UIFont? {
         UIFont(name: "AvenirNext-UltraLight", size: size)
     }
@@ -28,4 +29,5 @@ public extension UIFont {
     static func sc_heavyFont(size: CGFloat) -> UIFont? {
         UIFont(name: "AvenirNext-Heavy", size: size)
     }
+
 }

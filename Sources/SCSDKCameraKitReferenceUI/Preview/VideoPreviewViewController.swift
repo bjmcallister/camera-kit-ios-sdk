@@ -1,5 +1,5 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
+//  CameraKitSandbox
 
 import AVKit
 import Photos
@@ -7,6 +7,7 @@ import UIKit
 
 /// Preview view controller for showing recorded video previews
 public class VideoPreviewViewController: PreviewViewController {
+
     // MARK: Properties
 
     /// URL which contains video file
@@ -42,12 +43,11 @@ public class VideoPreviewViewController: PreviewViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override public func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         setup()
     }
@@ -57,40 +57,18 @@ public class VideoPreviewViewController: PreviewViewController {
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(appDidEnterBackgroundNotification(_:)),
-            name: UIApplication.didEnterBackgroundNotification, object: nil
-        )
+            name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(appWillEnterForegroundNotification(_:)),
-            name: UIApplication.willEnterForegroundNotification, object: nil
-        )
+            name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
     // MARK: Action Overrides
 
-    override public func openSnapchatPressed(_ sender: UIButton) {
-        snapchatDelegate?.cameraKitViewController(self, openSnapchat: .video(videoUrl))
-    }
-
-    override public func sharePreviewPressed(_ sender: UIButton) {
-        let viewController = UIActivityViewController(activityItems: [videoUrl], applicationActivities: nil)
-        viewController.popoverPresentationController?.sourceView = sender
-        viewController.completionWithItemsHandler = { [weak self] _, _, _, _ in
-            guard
-                let strongSelf = self,
-                strongSelf.videoPlayer.rate == 0 || strongSelf.videoPlayer.error != nil
-            else {
-                return
-            }
-
-            strongSelf.videoPlayer.play()
-        }
-        present(viewController, animated: true, completion: nil)
-    }
-
-    override public func savePreviewPressed(_ sender: UIButton) {
+    override func savePreview() {
         PHPhotoLibrary.shared().performChanges({
             PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoUrl)
-        }) { saved, error in
+        }) { (saved, error) in
             var title: String
             var message: String
             if saved {
@@ -113,13 +91,11 @@ public class VideoPreviewViewController: PreviewViewController {
 
     // MARK: App Lifecyle Notifications
 
-    @objc
-    private func appDidEnterBackgroundNotification(_ notification: Notification) {
+    @objc private func appDidEnterBackgroundNotification(_ notification: Notification) {
         videoPlayer.pause()
     }
 
-    @objc
-    private func appWillEnterForegroundNotification(_ notification: Notification) {
+    @objc private func appWillEnterForegroundNotification(_ notification: Notification) {
         videoPlayer.play()
     }
 }
@@ -127,7 +103,7 @@ public class VideoPreviewViewController: PreviewViewController {
 // MARK: Video Player
 
 extension VideoPreviewViewController {
-    private func setupVideoPlayer() {
+    fileprivate func setupVideoPlayer() {
         addChild(playerController)
         view.insertSubview(playerController.view, at: 0)
         playerController.didMove(toParent: self)

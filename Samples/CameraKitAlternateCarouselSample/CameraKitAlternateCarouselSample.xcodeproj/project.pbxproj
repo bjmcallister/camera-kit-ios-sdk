@@ -393,7 +393,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 0FF07EC523D79DC400CFFA3F /* Build configuration list for PBXProject "CameraKitAlternateCarouselSample-SPM" */;
+			buildConfigurationList = 0FF07EC523D79DC400CFFA3F /* Build configuration list for PBXProject "CameraKitAlternateCarouselSample" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -762,7 +762,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 424M5254LK;
+				DEVELOPMENT_TEAM = 682HC5UAH5;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = CameraKitAlternateCarouselSample/Info.plist;
@@ -891,7 +891,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0FF07EC523D79DC400CFFA3F /* Build configuration list for PBXProject "CameraKitAlternateCarouselSample-SPM" */ = {
+		0FF07EC523D79DC400CFFA3F /* Build configuration list for PBXProject "CameraKitAlternateCarouselSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0FF07EF223D79DC500CFFA3F /* Debug */,

@@ -1,5 +1,5 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
+//  CameraKitSandbox
 
 import Foundation
 
@@ -20,8 +20,7 @@ public class BundleHelper {
 
             guard
                 let resourcesUrl = bundle.url(
-                    forResource: Constants.bundleName, withExtension: Constants.bundleExtension
-                ),
+                    forResource: Constants.bundleName, withExtension: Constants.bundleExtension),
                 let resourcesBundle = Bundle(url: resourcesUrl)
             else {
                 return bundle

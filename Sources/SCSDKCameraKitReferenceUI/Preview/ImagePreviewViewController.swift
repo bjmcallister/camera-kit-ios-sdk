@@ -1,11 +1,12 @@
 //  Copyright Snap Inc. All rights reserved.
-//  CameraKit
+//  CameraKitSandbox
 
 import Photos
 import UIKit
 
 /// Preview view controller for showing captured photos and images
 public class ImagePreviewViewController: PreviewViewController {
+
     // MARK: Properties
 
     /// UIImage to display
@@ -29,12 +30,11 @@ public class ImagePreviewViewController: PreviewViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override public func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         setup()
     }
@@ -53,20 +53,15 @@ public class ImagePreviewViewController: PreviewViewController {
 
     // MARK: Action Overrides
 
-    override public func openSnapchatPressed(_ sender: UIButton) {
-        snapchatDelegate?.cameraKitViewController(self, openSnapchat: .photo(image))
-    }
-
-    override public func sharePreviewPressed(_ sender: UIButton) {
+    override func sharePreview() {
         let viewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-        viewController.popoverPresentationController?.sourceView = sender
         present(viewController, animated: true, completion: nil)
     }
 
-    override public func savePreviewPressed(_ sender: UIButton) {
+    override func savePreview() {
         PHPhotoLibrary.shared().performChanges({
             PHAssetChangeRequest.creationRequestForAsset(from: self.image)
-        }) { saved, error in
+        }) { (saved, error) in
             var title: String
             var message: String
             if saved {

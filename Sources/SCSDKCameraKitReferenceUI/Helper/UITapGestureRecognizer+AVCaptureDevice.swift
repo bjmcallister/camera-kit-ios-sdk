@@ -9,11 +9,10 @@ extension UITapGestureRecognizer {
     /// AVCaptureDevice uses a coordinate system where (0, 0) is the top left and (1.0, 1.0) is the bottom right if the device
     /// is in landscape orientation with the home button on the right
     var captureDevicePoint: CGPoint? {
-        guard let view else { return nil }
+        guard let view = view else { return nil }
 
         var interfaceOrientation = UIApplication.shared.statusBarOrientation
-        if
-            #available(iOS 13, *),
+        if #available(iOS 13, *),
             let sceneOrientation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation
         {
             interfaceOrientation = sceneOrientation
